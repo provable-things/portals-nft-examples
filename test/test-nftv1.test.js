@@ -1,5 +1,8 @@
-const { expect } = require('chai')
-const BigNumber = require('bignumber.js')
+const { use, expect } = require('chai')
+const { solidity } = require('ethereum-waffle')
+const { BN } = require('./utils')
+const singletons = require('./utils/singletons')
+use(solidity)
 
 let testNftV1Native, gameItems, owner, account1, token, vault
 
@@ -12,7 +15,9 @@ describe('TestNftV1Native (proxy)', () => {
 
     const accounts = await ethers.getSigners()
     owner = accounts[0]
-    account1 = accounts[0]
+    account1 = accounts[1]
+
+    await singletons.ERC1820Registry(owner)
 
     vault = await MockVault.deploy()
     token = await Standard777Token.deploy('Token', 'TKN')
@@ -22,7 +27,16 @@ describe('TestNftV1Native (proxy)', () => {
     })
   })
 
-  it('retrieve returns a value previously initialized', async () => {
-    await gameItems.setApprovalForAll(testNftV1Native.address, true)
+  it('should be able to set minimum amount to pegin', async () => {
+    await expect(testNftV1Native.setMinAmountToPegIn(BN(0.05, 18)))
+      .to.emit(testNftV1Native, 'MinTokenAmountToPegInChanged')
+      .withArgs(BN(0.05, 18))
+  })
+
+  it('should not be able to set minimum amount to pegin', async () => {
+    const testNftV1NativeAccount1 = testNftV1Native.connect(account1)
+    await expect(testNftV1NativeAccount1.setMinAmountToPegIn(BN(0.05, 18))).to.be.revertedWith(
+      'TestNftV1Native: caller is not the owner'
+    )
   })
 })

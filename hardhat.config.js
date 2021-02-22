@@ -2,6 +2,7 @@ require('dotenv').config()
 require('@nomiclabs/hardhat-ethers')
 require('@openzeppelin/hardhat-upgrades')
 require('@nomiclabs/hardhat-etherscan')
+require('@nomiclabs/hardhat-waffle')
 
 const getEnvironmentVariable = (_envVar) =>
   process.env[_envVar]
@@ -30,7 +31,6 @@ module.exports = {
       },
     },
   },
-  defaultNetwork: 'ropsten',
   networks: {
     ropsten: {
       url: `https://ropsten.infura.io/v3/${getEnvironmentVariable('INFURA_KEY')}`,

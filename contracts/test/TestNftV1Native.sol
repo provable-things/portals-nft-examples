@@ -14,12 +14,20 @@ contract TestNftV1Native {
     IPERC20Vault vault;
     IERC20 token;
     address owner;
+    uint256 minTokenAmountToPegIn;
 
-    event PegIn(uint256 id, uint256 amount);
+    event PegIn(uint256 id, uint256 nftAmount, uint256 tokenAmount, string to);
+    event MinTokenAmountToPegInChanged(uint256 minTokenAmountToPegIn);
 
     modifier onlyOwner() {
         require(owner == msg.sender, "TestNftV1Native: caller is not the owner");
         _;
+    }
+
+    function setMinAmountToPegIn(uint256 _minTokenAmountToPegIn) external onlyOwner returns (bool) {
+        minTokenAmountToPegIn = _minTokenAmountToPegIn;
+        emit MinTokenAmountToPegInChanged(minTokenAmountToPegIn);
+        return true;
     }
 
     function initialize(
@@ -43,7 +51,7 @@ contract TestNftV1Native {
         token.safeTransferFrom(msg.sender, address(this), _tokenAmount);
         // TODO: encode nft metadata... uri or what else ??
         vault.pegIn(_tokenAmount, address(token), _to, "");
-        emit PegIn(_id, _nftAmount);
+        emit PegIn(_id, _nftAmount, _tokenAmount, _to);
         return true;
     }
 }
