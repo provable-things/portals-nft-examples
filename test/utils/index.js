@@ -1,4 +1,5 @@
 const BigNumber = require('bignumber.js')
+const { ethers } = require('ethers')
 
 const BN = (_amount, _decimals) =>
   BigNumber(_amount)
@@ -10,7 +11,10 @@ const BNhex = (_amount, _decimals) =>
     .multipliedBy(10 ** _decimals)
     .toFixed()}`
 
+const encode = (...params) => new ethers.utils.AbiCoder().encode(...params)
+
 module.exports = {
   BN,
   BNhex,
+  encode,
 }
