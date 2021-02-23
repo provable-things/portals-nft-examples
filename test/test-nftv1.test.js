@@ -4,7 +4,7 @@ const { BN } = require('./utils')
 const singletons = require('./utils/singletons')
 use(solidity)
 
-let testNftV1Native, gameItems, owner, account1, token, vault
+let testNftV1Native, gameItems, owner, account1, account2, token, vault
 
 describe('TestNftV1Native (proxy)', () => {
   beforeEach(async () => {
@@ -17,6 +17,9 @@ describe('TestNftV1Native (proxy)', () => {
     owner = accounts[0]
     account1 = accounts[1]
 
+    // NOTE: host blockchain (evm compatible) accounts
+    account2 = accounts[2]
+
     await singletons.ERC1820Registry(owner)
 
     vault = await MockVault.deploy()
@@ -25,6 +28,8 @@ describe('TestNftV1Native (proxy)', () => {
     testNftV1Native = await upgrades.deployProxy(TestNftV1Native, [gameItems.address, vault.address, token.address], {
       initializer: 'initialize',
     })
+
+    await testNftV1Native.setMinTokenAmountToPegIn(BN(1, 18))
   })
 
   it('should be able to set minimum amount to pegin', async () => {
@@ -46,5 +51,15 @@ describe('TestNftV1Native (proxy)', () => {
     const testNftV1NativeUpgraded = await upgrades.upgradeProxy(testNftV1Native.address, TestNftV1Native)
     const minTokenAmountToPegIn = await testNftV1NativeUpgraded.minTokenAmountToPegIn()
     expect(minTokenAmountToPegIn).to.be.equal(BN(0.05, 18))
+  })
+
+  it('should be able to pegin', async () => {
+    await token.approve(testNftV1Native.address, BN(1, 18))
+    await gameItems.setApprovalForAll(testNftV1Native.address, true)
+    await expect(testNftV1Native.pegIn(0, 10, BN(1, 18), account2.address))
+      .to.emit(testNftV1Native, 'PegIn')
+      .withArgs(0, 10, BN(1, 18), account2.address)
+
+    // NOTE: at this point let's suppose that a pNetwork node processes the pegin...
   })
 })

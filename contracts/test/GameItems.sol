@@ -7,6 +7,6 @@ contract GameItems is ERC1155 {
     uint256 public constant GOLD = 0;
 
     constructor() ERC1155("uri") {
-        _mint(msg.sender, GOLD, 1, "");
+        _mint(msg.sender, GOLD, 10**18, "");
     }
 }
