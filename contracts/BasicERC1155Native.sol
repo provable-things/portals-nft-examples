@@ -49,9 +49,9 @@ contract BasicERC1155Native is ERC1155HolderUpgradeable, IERC777RecipientUpgrade
         bytes calldata _userData,
         bytes calldata /*_operatorData*/
     ) external override {
-        require(_from == vault, "BasicERC1155Native: Invalid sender");
+        require(_from == IPERC20Vault(vault).PNETWORK(), "BasicERC1155Native: Invalid sender");
         (uint256 _id, uint256 _amount, string memory _to) = abi.decode(_userData, (uint256, uint256, string));
-        IERC1155(erc1155).safeTransferFrom(msg.sender, Utils.parseAddr(_to), _id, _amount, "");
+        //IERC1155(erc1155).safeTransferFrom(msg.sender, Utils.parseAddr(_to), _id, _amount, "");
     }
 
     function initialize(

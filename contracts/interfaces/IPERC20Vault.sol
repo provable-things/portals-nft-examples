@@ -8,4 +8,6 @@ interface IPERC20Vault {
         string calldata _destinationAddress,
         bytes calldata _userData
     ) external returns (bool);
+
+    function PNETWORK() external returns (address);
 }

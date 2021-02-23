@@ -132,5 +132,9 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
     await expect(basicERC1155HostAccount2.burn(0, 10, owner.address))
       .to.emit(basicERC1155HostAccount2, 'Burned')
       .withArgs(0, 10, owner.address)
+    expect(await basicERC1155Host.balanceOf(account2.address, 0)).to.be.equal(0)
+    
+    const vaultPnetwork = vault.connect(pnetwork)
+    await vaultPnetwork.pegOut(basicERC1155Native.address, nativeToken.address, 0, data)
   })
 })
