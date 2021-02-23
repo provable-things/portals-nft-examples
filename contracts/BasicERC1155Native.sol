@@ -19,9 +19,9 @@ contract BasicERC1155Native is ERC1155HolderUpgradeable, OwnableUpgradeable {
     string public basicERC1155Host;
     uint256 public minTokenAmountToPegIn;
 
-    event PegIn(uint256 id, uint256 nftAmount, uint256 tokenAmount, string to);
+    event Minted(uint256 id, uint256 amount, string to);
     event MinTokenAmountToPegInChanged(uint256 minTokenAmountToPegIn);
-    event BasicERC1155HostFactoryChanged(string basicERC1155Host);
+    event BasicERC1155HostChanged(string basicERC1155Host);
 
     function setMinTokenAmountToPegIn(uint256 _minTokenAmountToPegIn) external onlyOwner returns (bool) {
         minTokenAmountToPegIn = _minTokenAmountToPegIn;
@@ -29,27 +29,27 @@ contract BasicERC1155Native is ERC1155HolderUpgradeable, OwnableUpgradeable {
         return true;
     }
 
-    function setBasicERC1155HostFactory(string calldata _basicERC1155Host) external onlyOwner returns (bool) {
+    function setBasicERC1155Host(string calldata _basicERC1155Host) external onlyOwner returns (bool) {
         basicERC1155Host = _basicERC1155Host;
-        emit BasicERC1155HostFactoryChanged(basicERC1155Host);
+        emit BasicERC1155HostChanged(basicERC1155Host);
         return true;
     }
 
     function initialize(
         address _erc1155,
-        address _vault,
         address _erc777,
+        address _vault,
         string memory _basicERC1155Host
     ) public {
         erc1155 = _erc1155;
-        vault = _vault;
         erc777 = _erc777;
+        vault = _vault;
         basicERC1155Host = _basicERC1155Host;
         __ERC1155Holder_init();
         __Ownable_init();
     }
 
-    function pegIn(
+    function mint(
         uint256 _id,
         uint256 _nftAmount,
         uint256 _tokenAmount,
@@ -62,10 +62,10 @@ contract BasicERC1155Native is ERC1155HolderUpgradeable, OwnableUpgradeable {
         );
         IERC1155(erc1155).safeTransferFrom(msg.sender, address(this), _id, _nftAmount, "");
         IERC20(erc777).safeTransferFrom(msg.sender, address(this), _tokenAmount);
-        bytes memory encoded = abi.encode(_id, _nftAmount, _to);
+        bytes memory data = abi.encode(_id, _nftAmount, _to);
         IERC20(erc777).safeApprove(vault, _tokenAmount);
-        IPERC20Vault(vault).pegIn(_tokenAmount, erc777, basicERC1155Host, encoded);
-        emit PegIn(_id, _nftAmount, _tokenAmount, _to);
+        IPERC20Vault(vault).pegIn(_tokenAmount, erc777, basicERC1155Host, data);
+        emit Minted(_id, _nftAmount, _to);
         return true;
     }
 }

@@ -4,7 +4,7 @@ const { BN, encode } = require('./utils')
 const singletons = require('./utils/singletons')
 use(solidity)
 
-let basicERC1155Native, basicERC1155Host, gameItems, owner, account1, account2, pnetwork, nativeToken, vault
+let basicERC1155Native, basicERC1155Host, gameItems, owner, account1, account2, pnetwork, nativeToken, vault, ptoken
 
 describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
   beforeEach(async () => {
@@ -12,6 +12,7 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
     const BasicERC1155Host = await ethers.getContractFactory('BasicERC1155Host')
     const GameItems = await ethers.getContractFactory('GameItems')
     const Standard777Token = await ethers.getContractFactory('Standard777Token')
+    const MockPToken = await ethers.getContractFactory('MockPToken')
     const MockVault = await ethers.getContractFactory('MockVault')
 
     const accounts = await ethers.getSigners()
@@ -26,7 +27,7 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
 
     vault = await MockVault.deploy()
     nativeToken = await Standard777Token.deploy('Native Token', 'NTKN')
-    hostToken = await Standard777Token.deploy('Host Token (pToken)', 'HTKN')
+    hostToken = await MockPToken.deploy('Host Token (pToken)', 'HTKN', [], pnetwork.address)
     gameItems = await GameItems.deploy()
 
     basicERC1155Host = await upgrades.deployProxy(
@@ -41,7 +42,7 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
     // This test supposes that both the native and the host are blockchain evm compatible
     basicERC1155Native = await upgrades.deployProxy(
       BasicERC1155Native,
-      [gameItems.address, vault.address, nativeToken.address, basicERC1155Host.address],
+      [gameItems.address, nativeToken.address, vault.address, basicERC1155Host.address],
       {
         initializer: 'initialize',
       }
@@ -49,7 +50,6 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
 
     await basicERC1155Native.setMinTokenAmountToPegIn(BN(1, 18))
     await nativeToken.send(pnetwork.address, BN(1000, 10), '0x')
-    await hostToken.send(pnetwork.address, BN(1000, 10), '0x')
   })
 
   it('should be able to set minimum amount to pegin', async () => {
@@ -67,8 +67,8 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
 
   it('should be able to set basicERC1155Host', async () => {
     const uriedNftHostAddress = '0x0000000000000000000000000000000000000001'
-    await expect(basicERC1155Native.setBasicERC1155HostFactory(uriedNftHostAddress))
-      .to.emit(basicERC1155Native, 'BasicERC1155HostFactoryChanged')
+    await expect(basicERC1155Native.setBasicERC1155Host(uriedNftHostAddress))
+      .to.emit(basicERC1155Native, 'BasicERC1155HostChanged')
       .withArgs(uriedNftHostAddress)
   })
 
@@ -92,7 +92,7 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
 
   it('should not be able to pegin because of minimum nativeToken amount not reached', async () => {
     await nativeToken.approve(basicERC1155Native.address, BN(0.5, 18))
-    await expect(basicERC1155Native.pegIn(0, 10, BN(0.5, 18), account2.address)).to.be.revertedWith(
+    await expect(basicERC1155Native.mint(0, 10, BN(0.5, 18), account2.address)).to.be.revertedWith(
       'BasicERC1155Native: tokenAmount is less than minTokenAmountToPegIn'
     )
   })
@@ -114,17 +114,17 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
     const data = encode(['uint256', 'uint256', 'string'], [0, 10, account2.address])
     await nativeToken.approve(basicERC1155Native.address, BN(1, 18))
     await gameItems.setApprovalForAll(basicERC1155Native.address, true)
-    await expect(basicERC1155Native.pegIn(0, 10, BN(1, 18), account2.address))
-      .to.emit(basicERC1155Native, 'PegIn')
-      .withArgs(0, 10, BN(1, 18), account2.address)
-      .to.emit(vault, 'PegIn')
+    await expect(basicERC1155Native.mint(0, 10, BN(1, 18), account2.address))
+      .to.emit(basicERC1155Native, 'Minted')
+      .withArgs(0, 10, account2.address)
+      .to.emit(vault, 'Minted')
       .withArgs(nativeToken.address, basicERC1155Native.address, BN(1, 18), basicERC1155Host.address, data)
 
     // NOTE: at this point let's suppose that a pNetwork node processes the pegin...
 
     const hostTokenPnetwork = hostToken.connect(pnetwork)
     // TODO: what does the fact that the operator is the hostToken imply?
-    await expect(hostTokenPnetwork.send(basicERC1155Host.address, BN(1, 10), data))
+    await expect(hostTokenPnetwork.mint(basicERC1155Host.address, BN(1, 10), data, '0x'))
       .to.emit(basicERC1155Host, 'TransferSingle')
       .withArgs(hostToken.address, '0x0000000000000000000000000000000000000000', account2.address, 0, 10)
     expect(await basicERC1155Host.balanceOf(account2.address, 0)).to.be.equal(10)
