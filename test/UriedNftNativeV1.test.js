@@ -45,7 +45,7 @@ describe('UriedNftNativeV1 (proxy)', () => {
   it('should not be able to set minimum amount to pegin', async () => {
     const testNftV1NativeAccount1 = uriedNftV1Native.connect(account1)
     await expect(testNftV1NativeAccount1.setMinTokenAmountToPegIn(BN(0.05, 18))).to.be.revertedWith(
-      'UriedNftNativeV1: caller is not the owner'
+      'Ownable: caller is not the owner'
     )
   })
 
@@ -60,7 +60,7 @@ describe('UriedNftNativeV1 (proxy)', () => {
     const uriedNftHostAddress = '0x0000000000000000000000000000000000000001'
     const testNftV1NativeAccount1 = uriedNftV1Native.connect(account1)
     await expect(testNftV1NativeAccount1.setMinTokenAmountToPegIn(uriedNftHostAddress)).to.be.revertedWith(
-      'UriedNftNativeV1: caller is not the owner'
+      'Ownable: caller is not the owner'
     )
   })
 
@@ -72,6 +72,13 @@ describe('UriedNftNativeV1 (proxy)', () => {
     const uriedNftHostAddress = await testNftV1NativeUpgraded.uriedNftHost()
     expect(minTokenAmountToPegIn).to.be.equal(BN(0.05, 18))
     expect(uriedNftHostAddress).to.be.equal('0x0000000000000000000000000000000000000000')
+  })
+
+  it('should not be able to pegin because of minimum token amount not reached', async () => {
+    await token.approve(uriedNftV1Native.address, BN(0.5, 18))
+    await expect(uriedNftV1Native.pegIn(0, 10, BN(0.5, 18), account2.address)).to.be.revertedWith(
+      'UriedNftNativeV1: tokenAmount is less than minTokenAmountToPegIn'
+    )
   })
 
   it('should be able to pegin', async () => {
