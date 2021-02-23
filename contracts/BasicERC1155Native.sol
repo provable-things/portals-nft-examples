@@ -10,18 +10,18 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/IPERC20Vault.sol";
 
 
-contract UriedNftNativeV1 is ERC1155HolderUpgradeable, OwnableUpgradeable {
+contract BasicERC1155Native is ERC1155HolderUpgradeable, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
-    address public nft;
+    address public erc1155;
+    address public erc777;
     address public vault;
-    address public token;
-    string public uriedNftHost;
+    string public basicERC1155Host;
     uint256 public minTokenAmountToPegIn;
 
     event PegIn(uint256 id, uint256 nftAmount, uint256 tokenAmount, string to);
     event MinTokenAmountToPegInChanged(uint256 minTokenAmountToPegIn);
-    event UriedNftHostChanged(string uriedNftHost);
+    event BasicERC1155HostFactoryChanged(string basicERC1155Host);
 
     function setMinTokenAmountToPegIn(uint256 _minTokenAmountToPegIn) external onlyOwner returns (bool) {
         minTokenAmountToPegIn = _minTokenAmountToPegIn;
@@ -29,22 +29,22 @@ contract UriedNftNativeV1 is ERC1155HolderUpgradeable, OwnableUpgradeable {
         return true;
     }
 
-    function setUriedNftHost(string calldata _uriedNftHost) external onlyOwner returns (bool) {
-        uriedNftHost = _uriedNftHost;
-        emit UriedNftHostChanged(uriedNftHost);
+    function setBasicERC1155HostFactory(string calldata _basicERC1155Host) external onlyOwner returns (bool) {
+        basicERC1155Host = _basicERC1155Host;
+        emit BasicERC1155HostFactoryChanged(basicERC1155Host);
         return true;
     }
 
     function initialize(
-        address _nft,
+        address _erc1155,
         address _vault,
-        address _token,
-        string calldata _uriedNftHost
+        address _erc777,
+        string memory _basicERC1155Host
     ) public {
-        nft = _nft;
+        erc1155 = _erc1155;
         vault = _vault;
-        token = _token;
-        uriedNftHost = _uriedNftHost;
+        erc777 = _erc777;
+        basicERC1155Host = _basicERC1155Host;
         __ERC1155Holder_init();
         __Ownable_init();
     }
@@ -53,19 +53,18 @@ contract UriedNftNativeV1 is ERC1155HolderUpgradeable, OwnableUpgradeable {
         uint256 _id,
         uint256 _nftAmount,
         uint256 _tokenAmount,
-        string calldata _to
+        string memory _to
     ) public returns (bool) {
-        require(_nftAmount > 0, "UriedNftNativeV1: nftAmount must be greater than 0");
+        require(_nftAmount > 0, "BasicERC1155Native: nftAmount must be greater than 0");
         require(
             _tokenAmount >= minTokenAmountToPegIn,
-            "UriedNftNativeV1: tokenAmount is less than minTokenAmountToPegIn"
+            "BasicERC1155Native: tokenAmount is less than minTokenAmountToPegIn"
         );
-        IERC1155(nft).safeTransferFrom(msg.sender, address(this), _id, _nftAmount, "");
-        IERC20(token).safeTransferFrom(msg.sender, address(this), _tokenAmount);
-        string memory uri = IERC1155MetadataURI(nft).uri(_id);
-        bytes memory encoded = abi.encode(_id, _nftAmount, _to, uri);
-        IERC20(token).safeApprove(vault, _tokenAmount);
-        IPERC20Vault(vault).pegIn(_tokenAmount, token, uriedNftHost, encoded);
+        IERC1155(erc1155).safeTransferFrom(msg.sender, address(this), _id, _nftAmount, "");
+        IERC20(erc777).safeTransferFrom(msg.sender, address(this), _tokenAmount);
+        bytes memory encoded = abi.encode(_id, _nftAmount, _to);
+        IERC20(erc777).safeApprove(vault, _tokenAmount);
+        IPERC20Vault(vault).pegIn(_tokenAmount, erc777, basicERC1155Host, encoded);
         emit PegIn(_id, _nftAmount, _tokenAmount, _to);
         return true;
     }
