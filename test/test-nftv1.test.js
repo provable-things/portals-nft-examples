@@ -28,15 +28,23 @@ describe('TestNftV1Native (proxy)', () => {
   })
 
   it('should be able to set minimum amount to pegin', async () => {
-    await expect(testNftV1Native.setMinAmountToPegIn(BN(0.05, 18)))
+    await expect(testNftV1Native.setMinTokenAmountToPegIn(BN(0.05, 18)))
       .to.emit(testNftV1Native, 'MinTokenAmountToPegInChanged')
       .withArgs(BN(0.05, 18))
   })
 
   it('should not be able to set minimum amount to pegin', async () => {
     const testNftV1NativeAccount1 = testNftV1Native.connect(account1)
-    await expect(testNftV1NativeAccount1.setMinAmountToPegIn(BN(0.05, 18))).to.be.revertedWith(
+    await expect(testNftV1NativeAccount1.setMinTokenAmountToPegIn(BN(0.05, 18))).to.be.revertedWith(
       'TestNftV1Native: caller is not the owner'
     )
+  })
+
+  it('should be able to retrieve minAmountToPegIn after a contract upgrade', async () => {
+    await testNftV1Native.setMinTokenAmountToPegIn(BN(0.05, 18))
+    const TestNftV1Native = await ethers.getContractFactory('TestNftV1Native')
+    const testNftV1NativeUpgraded = await upgrades.upgradeProxy(testNftV1Native.address, TestNftV1Native)
+    const minTokenAmountToPegIn = await testNftV1NativeUpgraded.minTokenAmountToPegIn()
+    expect(minTokenAmountToPegIn).to.be.equal(BN(0.05, 18))
   })
 })

@@ -14,7 +14,7 @@ contract TestNftV1Native {
     IPERC20Vault vault;
     IERC20 token;
     address owner;
-    uint256 minTokenAmountToPegIn;
+    uint256 public minTokenAmountToPegIn;
 
     event PegIn(uint256 id, uint256 nftAmount, uint256 tokenAmount, string to);
     event MinTokenAmountToPegInChanged(uint256 minTokenAmountToPegIn);
@@ -24,7 +24,7 @@ contract TestNftV1Native {
         _;
     }
 
-    function setMinAmountToPegIn(uint256 _minTokenAmountToPegIn) external onlyOwner returns (bool) {
+    function setMinTokenAmountToPegIn(uint256 _minTokenAmountToPegIn) external onlyOwner returns (bool) {
         minTokenAmountToPegIn = _minTokenAmountToPegIn;
         emit MinTokenAmountToPegInChanged(minTokenAmountToPegIn);
         return true;
