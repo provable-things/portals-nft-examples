@@ -11,7 +11,7 @@ Repository containing pNetwork Portals smart contracts.
 ## :guardsman: Smart Contract Tests
 
 ```
-❍ npm install install
+❍ npm install
 ```
 
 ```
