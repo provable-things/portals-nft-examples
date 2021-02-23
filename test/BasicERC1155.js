@@ -32,7 +32,7 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
 
     basicERC1155Host = await upgrades.deployProxy(
       BasicERC1155Host,
-      [hostToken.address, 'https://abcoathup.github.io/SampleERC1155/api/token/{id}.json', pnetwork.address],
+      [hostToken.address, 'https://abcoathup.github.io/SampleERC1155/api/token/{id}.json'],
       {
         initializer: 'initialize',
       }
@@ -97,21 +97,19 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
     )
   })
 
-  it('should not be able to mint tokens on the host chain if sender is not pNetwork', async () => {
-    await expect(hostToken.send(basicERC1155Host.address, BN(1, 10), '0x')).to.be.revertedWith(
-      'BasicERC1155Host: Invalid sender'
-    )
-  })
-
   it('should not be able to mint tokens on the host chain with a wrong token', async () => {
-    const nativeTokenPnetwork = nativeToken.connect(pnetwork)
-    await expect(nativeTokenPnetwork.send(basicERC1155Host.address, BN(1, 10), '0x')).to.be.revertedWith(
+    const MockPToken = await ethers.getContractFactory('MockPToken')
+    const data = encode(['uint256', 'uint256', 'string'], [0, 10, account2.address])
+    wrongPtoken = await MockPToken.deploy('Host Token (pToken)', 'HTKN', [], pnetwork.address)
+    const wrongPtokenPnetwork = wrongPtoken.connect(pnetwork)
+    await expect(wrongPtokenPnetwork.mint(basicERC1155Host.address, BN(1, 10), data, '0x')).to.be.revertedWith(
       'BasicERC1155Host: Invalid token'
     )
   })
 
-  it('should be able to pegin', async () => {
+  it('should be able to pegin and pegout', async () => {
     const data = encode(['uint256', 'uint256', 'string'], [0, 10, account2.address])
+    // P E G   I N
     await nativeToken.approve(basicERC1155Native.address, BN(1, 18))
     await gameItems.setApprovalForAll(basicERC1155Native.address, true)
     await expect(basicERC1155Native.mint(0, 10, BN(1, 18), account2.address))
@@ -128,5 +126,11 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
       .to.emit(basicERC1155Host, 'TransferSingle')
       .withArgs(hostToken.address, '0x0000000000000000000000000000000000000000', account2.address, 0, 10)
     expect(await basicERC1155Host.balanceOf(account2.address, 0)).to.be.equal(10)
+
+    // P E G   O U T
+    const basicERC1155HostAccount2 = basicERC1155Host.connect(account2)
+    await expect(basicERC1155HostAccount2.burn(0, 10, owner.address))
+      .to.emit(basicERC1155HostAccount2, 'Burned')
+      .withArgs(0, 10, owner.address)
   })
 })

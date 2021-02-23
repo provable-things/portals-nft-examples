@@ -16,7 +16,6 @@ contract BasicERC1155Host is ERC1155Upgradeable, IERC777RecipientUpgradeable, Ow
     bytes32 private constant TOKENS_RECIPIENT_INTERFACE_HASH = keccak256("ERC777TokensRecipient");
 
     address public pToken;
-    address public pNetwork;
     string public basicERC1155Native;
 
     event Burned(uint256 id, uint256 amount, string to);
@@ -28,6 +27,12 @@ contract BasicERC1155Host is ERC1155Upgradeable, IERC777RecipientUpgradeable, Ow
         return true;
     }
 
+    /**
+     *  @notice only pNetwork is able to mint pTokens so nobody else is able
+     *          to call _mint because of _from == address(0) and the whitelisting
+     *          of pToken
+     *
+     **/
     function tokensReceived(
         address, /*_operator*/
         address _from,
@@ -44,11 +49,9 @@ contract BasicERC1155Host is ERC1155Upgradeable, IERC777RecipientUpgradeable, Ow
 
     function initialize(
         address _pToken,
-        string memory _uri,
-        address _pNetwork
+        string memory _uri
     ) public {
         pToken = _pToken;
-        pNetwork = _pNetwork;
         _erc1820 = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
         _erc1820.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
         __Ownable_init();
