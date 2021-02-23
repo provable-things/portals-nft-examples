@@ -1,10 +1,11 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity ^0.7.0;
+pragma solidity ^0.7.3;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC777/IERC777Recipient.sol";
 import "@openzeppelin/contracts/introspection/IERC1820Registry.sol";
+import "@openzeppelin/contracts/token/ERC777/IERC777.sol";
 
 
 contract MockVault is IERC777Recipient {
@@ -52,6 +53,17 @@ contract MockVault is IERC777Recipient {
         require(_tokenAmount > 0, "Token amount must be greater than zero!");
         IERC20(_tokenAddress).safeTransferFrom(msg.sender, address(this), _tokenAmount);
         emit Minted(_tokenAddress, msg.sender, _tokenAmount, _destinationAddress, _userData);
+        return true;
+    }
+
+    // NOTE: in the reality should be called only by pNetwork
+    function pegOut(
+        address payable _tokenRecipient,
+        address _tokenAddress,
+        uint256 _tokenAmount,
+        bytes calldata _userData
+    ) external returns (bool) {
+        IERC777(_tokenAddress).send(_tokenRecipient, _tokenAmount, _userData);
         return true;
     }
 }

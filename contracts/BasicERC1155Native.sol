@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity ^0.7.0;
+pragma solidity ^0.7.3;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
@@ -7,11 +7,17 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155MetadataURI.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC777/IERC777RecipientUpgradeable.sol";
+import "@openzeppelin/contracts/introspection/IERC1820Registry.sol";
+import "./lib/Utils.sol";
 import "./interfaces/IPERC20Vault.sol";
 
 
-contract BasicERC1155Native is ERC1155HolderUpgradeable, OwnableUpgradeable {
+contract BasicERC1155Native is ERC1155HolderUpgradeable, IERC777RecipientUpgradeable, OwnableUpgradeable {
     using SafeERC20 for IERC20;
+
+    IERC1820Registry private _erc1820;
+    bytes32 private constant TOKENS_RECIPIENT_INTERFACE_HASH = keccak256("ERC777TokensRecipient");
 
     address public erc1155;
     address public erc777;
@@ -35,6 +41,19 @@ contract BasicERC1155Native is ERC1155HolderUpgradeable, OwnableUpgradeable {
         return true;
     }
 
+    function tokensReceived(
+        address, /*_operator*/
+        address _from,
+        address, /*_to,*/
+        uint256, /*_amount*/
+        bytes calldata _userData,
+        bytes calldata /*_operatorData*/
+    ) external override {
+        require(_from == vault, "BasicERC1155Native: Invalid sender");
+        (uint256 _id, uint256 _amount, string memory _to) = abi.decode(_userData, (uint256, uint256, string));
+        IERC1155(erc1155).safeTransferFrom(msg.sender, Utils.parseAddr(_to), _id, _amount, "");
+    }
+
     function initialize(
         address _erc1155,
         address _erc777,
@@ -45,6 +64,8 @@ contract BasicERC1155Native is ERC1155HolderUpgradeable, OwnableUpgradeable {
         erc777 = _erc777;
         vault = _vault;
         basicERC1155Host = _basicERC1155Host;
+        _erc1820 = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
+        _erc1820.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
         __ERC1155Holder_init();
         __Ownable_init();
     }

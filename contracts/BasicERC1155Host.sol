@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity ^0.7.0;
+pragma solidity ^0.7.3;
 
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155MetadataURI.sol";
@@ -47,10 +47,7 @@ contract BasicERC1155Host is ERC1155Upgradeable, IERC777RecipientUpgradeable, Ow
         _mint(Utils.parseAddr(_to), _id, _amount, ""); // TODO: handle "" data
     }
 
-    function initialize(
-        address _pToken,
-        string memory _uri
-    ) public {
+    function initialize(address _pToken, string memory _uri) public {
         pToken = _pToken;
         _erc1820 = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
         _erc1820.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
@@ -63,7 +60,7 @@ contract BasicERC1155Host is ERC1155Upgradeable, IERC777RecipientUpgradeable, Ow
         uint256 _amount,
         string memory _to
     ) public returns (bool) {
-        // TODO: understand if we should burn a minimum amont of pToken token
+        // TODO: understand if we should burn a minimum amont of pToken
         _burn(msg.sender, _id, _amount);
         bytes memory data = abi.encode(_id, _amount, _to);
         IPToken(pToken).redeem(0, data, basicERC1155Native);
