@@ -22,16 +22,14 @@ contract BasicERC1155Host is ERC1155Upgradeable, IERC777RecipientUpgradeable, Ow
     event BasicERC1155NativeChanged(string basicERC1155Native);
     event PtokenChanged(address pToken);
 
-    function setBasicERC1155Native(string calldata _basicERC1155Native) external onlyOwner returns (bool) {
+    function setBasicERC1155Native(string calldata _basicERC1155Native) external onlyOwner {
         basicERC1155Native = _basicERC1155Native;
         emit BasicERC1155NativeChanged(basicERC1155Native);
-        return true;
     }
 
-    function setPtoken(address _pToken) external onlyOwner returns (bool) {
+    function setPtoken(address _pToken) external onlyOwner {
         pToken = _pToken;
         emit PtokenChanged(pToken);
-        return true;
     }
 
     /**
