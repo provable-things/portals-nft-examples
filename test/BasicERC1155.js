@@ -171,4 +171,9 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
       'ERC1155: insufficient balance for transfer'
     )
   })
+
+  it('only pnetwork is able to mint tokens on the host blockchain', async () => {
+    await hostToken.connect(pnetwork).mint(owner.address, 1000, '0x', '0x')
+    await expect(hostToken.send(basicERC1155Host.address, 1000, '0x')).to.not.emit(basicERC1155Host, 'TransferSingle')
+  })
 })
