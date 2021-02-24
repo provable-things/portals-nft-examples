@@ -20,10 +20,17 @@ contract BasicERC1155Host is ERC1155Upgradeable, IERC777RecipientUpgradeable, Ow
 
     event Burned(uint256 id, uint256 amount, string to);
     event BasicERC1155NativeChanged(string basicERC1155Native);
+    event PtokenChanged(address pToken);
 
     function setBasicERC1155Native(string calldata _basicERC1155Native) external onlyOwner returns (bool) {
         basicERC1155Native = _basicERC1155Native;
         emit BasicERC1155NativeChanged(basicERC1155Native);
+        return true;
+    }
+
+    function setPtoken(address _pToken) external onlyOwner returns (bool) {
+        pToken = _pToken;
+        emit PtokenChanged(pToken);
         return true;
     }
 
@@ -41,10 +48,10 @@ contract BasicERC1155Host is ERC1155Upgradeable, IERC777RecipientUpgradeable, Ow
         bytes calldata _userData,
         bytes calldata /*_operatorData*/
     ) external override {
-        require(_from == address(0), "BasicERC1155Host: Invalid sender");
-        require(msg.sender == pToken, "BasicERC1155Host: Invalid token");
-        (uint256 _id, uint256 _amount, string memory _to) = abi.decode(_userData, (uint256, uint256, string));
-        _mint(Utils.parseAddr(_to), _id, _amount, ""); // TODO: handle "" data
+        if (_from == address(0) && _msgSender() == pToken) {
+            (uint256 _id, uint256 _amount, string memory _to) = abi.decode(_userData, (uint256, uint256, string));
+            _mint(Utils.parseAddr(_to), _id, _amount, ""); // TODO: handle "" data
+        }
     }
 
     function initialize(address _pToken, string memory _uri) public {
@@ -61,7 +68,7 @@ contract BasicERC1155Host is ERC1155Upgradeable, IERC777RecipientUpgradeable, Ow
         string memory _to
     ) public returns (bool) {
         // TODO: understand if we should burn a minimum amont of pToken
-        _burn(msg.sender, _id, _amount);
+        _burn(_msgSender(), _id, _amount);
         bytes memory data = abi.encode(_id, _amount, _to);
         IPToken(pToken).redeem(0, data, basicERC1155Native);
         emit Burned(_id, _amount, _to);

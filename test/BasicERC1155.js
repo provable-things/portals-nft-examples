@@ -25,7 +25,7 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
 
     await singletons.ERC1820Registry(owner)
 
-    vault = await MockVault.deploy()
+    vault = await MockVault.deploy(pnetwork.address)
     nativeToken = await Standard777Token.deploy('Native Token', 'NTKN')
     hostToken = await MockPToken.deploy('Host Token (pToken)', 'HTKN', [], pnetwork.address)
     gameItems = await GameItems.deploy()
@@ -80,6 +80,28 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
     )
   })
 
+  it('should be able to set erc777', async () => {
+    const erc777 = '0x0000000000000000000000000000000000004321'
+    await expect(basicERC1155Native.setERC777(erc777)).to.emit(basicERC1155Native, 'ERC777Changed').withArgs(erc777)
+  })
+
+  it('should not be able to set erc777', async () => {
+    const erc777 = '0x0000000000000000000000000000000000004321'
+    const basicERC1155NativeAccount1 = basicERC1155Native.connect(account1)
+    await expect(basicERC1155NativeAccount1.setERC777(erc777)).to.be.revertedWith('Ownable: caller is not the owner')
+  })
+
+  it('should be able to set pToken', async () => {
+    const pToken = '0x0000000000000000000000000000000000004321'
+    await expect(basicERC1155Host.setPtoken(pToken)).to.emit(basicERC1155Host, 'PtokenChanged').withArgs(pToken)
+  })
+
+  it('should not be able to set pToken', async () => {
+    const pToken = '0x0000000000000000000000000000000000004321'
+    const basicERC1155HostAccount1 = basicERC1155Host.connect(account1)
+    await expect(basicERC1155HostAccount1.setPtoken(pToken)).to.be.revertedWith('Ownable: caller is not the owner')
+  })
+
   it('should be able to retrieve minAmountToPegIn and basicERC1155Host after a contract upgrade', async () => {
     await basicERC1155Native.setMinTokenAmountToPegIn(BN(0.05, 18))
     const BasicERC1155Native = await ethers.getContractFactory('BasicERC1155Native')
@@ -102,13 +124,16 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
     const data = encode(['uint256', 'uint256', 'string'], [0, 10, account2.address])
     wrongPtoken = await MockPToken.deploy('Host Token (pToken)', 'HTKN', [], pnetwork.address)
     const wrongPtokenPnetwork = wrongPtoken.connect(pnetwork)
-    await expect(wrongPtokenPnetwork.mint(basicERC1155Host.address, BN(1, 10), data, '0x')).to.be.revertedWith(
-      'BasicERC1155Host: Invalid token'
+    await expect(wrongPtokenPnetwork.mint(basicERC1155Host.address, BN(1, 10), data, '0x')).to.not.emit(
+      basicERC1155Host,
+      'TransferSingle'
     )
   })
 
   it('should be able to pegin and pegout', async () => {
-    const data = encode(['uint256', 'uint256', 'string'], [0, 10, account2.address])
+    const peginData = encode(['uint256', 'uint256', 'string'], [0, 10, account2.address])
+    const pegoutData = encode(['uint256', 'uint256', 'string'], [0, 10, owner.address])
+    const initialBalance = await gameItems.balanceOf(owner.address, 0)
     // P E G   I N
     await nativeToken.approve(basicERC1155Native.address, BN(1, 18))
     await gameItems.setApprovalForAll(basicERC1155Native.address, true)
@@ -116,13 +141,13 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
       .to.emit(basicERC1155Native, 'Minted')
       .withArgs(0, 10, account2.address)
       .to.emit(vault, 'Minted')
-      .withArgs(nativeToken.address, basicERC1155Native.address, BN(1, 18), basicERC1155Host.address, data)
+      .withArgs(nativeToken.address, basicERC1155Native.address, BN(1, 18), basicERC1155Host.address, peginData)
 
     // NOTE: at this point let's suppose that a pNetwork node processes the pegin...
 
     const hostTokenPnetwork = hostToken.connect(pnetwork)
     // TODO: what does the fact that the operator is the hostToken imply?
-    await expect(hostTokenPnetwork.mint(basicERC1155Host.address, BN(1, 10), data, '0x'))
+    await expect(hostTokenPnetwork.mint(basicERC1155Host.address, BN(1, 10), peginData, '0x'))
       .to.emit(basicERC1155Host, 'TransferSingle')
       .withArgs(hostToken.address, '0x0000000000000000000000000000000000000000', account2.address, 0, 10)
     expect(await basicERC1155Host.balanceOf(account2.address, 0)).to.be.equal(10)
@@ -133,8 +158,17 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
       .to.emit(basicERC1155HostAccount2, 'Burned')
       .withArgs(0, 10, owner.address)
     expect(await basicERC1155Host.balanceOf(account2.address, 0)).to.be.equal(0)
-    
+
     const vaultPnetwork = vault.connect(pnetwork)
-    await vaultPnetwork.pegOut(basicERC1155Native.address, nativeToken.address, 0, data)
+    await vaultPnetwork.pegOut(basicERC1155Native.address, nativeToken.address, 0, pegoutData)
+    expect(await gameItems.balanceOf(owner.address, 0)).to.be.equal(initialBalance)
+  })
+
+  it('should be able to pegin more than an user owns', async () => {
+    await nativeToken.approve(basicERC1155Native.address, BN(1, 18))
+    await gameItems.setApprovalForAll(basicERC1155Native.address, true)
+    await expect(basicERC1155Native.mint(0, BN(11, 18), BN(1, 18), account2.address)).to.be.revertedWith(
+      'ERC1155: insufficient balance for transfer'
+    )
   })
 })

@@ -28,6 +28,7 @@ contract BasicERC1155Native is ERC1155HolderUpgradeable, IERC777RecipientUpgrade
     event Minted(uint256 id, uint256 amount, string to);
     event MinTokenAmountToPegInChanged(uint256 minTokenAmountToPegIn);
     event BasicERC1155HostChanged(string basicERC1155Host);
+    event ERC777Changed(address erc777);
 
     function setMinTokenAmountToPegIn(uint256 _minTokenAmountToPegIn) external onlyOwner returns (bool) {
         minTokenAmountToPegIn = _minTokenAmountToPegIn;
@@ -41,6 +42,12 @@ contract BasicERC1155Native is ERC1155HolderUpgradeable, IERC777RecipientUpgrade
         return true;
     }
 
+    function setERC777(address _erc777) external onlyOwner returns (bool) {
+        erc777 = _erc777;
+        emit ERC777Changed(erc777);
+        return true;
+    }
+
     function tokensReceived(
         address, /*_operator*/
         address _from,
@@ -49,9 +56,10 @@ contract BasicERC1155Native is ERC1155HolderUpgradeable, IERC777RecipientUpgrade
         bytes calldata _userData,
         bytes calldata /*_operatorData*/
     ) external override {
-        require(_from == IPERC20Vault(vault).PNETWORK(), "BasicERC1155Native: Invalid sender");
-        (uint256 _id, uint256 _amount, string memory _to) = abi.decode(_userData, (uint256, uint256, string));
-        //IERC1155(erc1155).safeTransferFrom(msg.sender, Utils.parseAddr(_to), _id, _amount, "");
+        if (_msgSender() == erc777 && _from == vault) {
+            (uint256 id, uint256 amount, string memory to) = abi.decode(_userData, (uint256, uint256, string));
+            IERC1155(erc1155).safeTransferFrom(address(this), Utils.parseAddr(to), id, amount, "");
+        }
     }
 
     function initialize(
@@ -81,8 +89,8 @@ contract BasicERC1155Native is ERC1155HolderUpgradeable, IERC777RecipientUpgrade
             _tokenAmount >= minTokenAmountToPegIn,
             "BasicERC1155Native: tokenAmount is less than minTokenAmountToPegIn"
         );
-        IERC1155(erc1155).safeTransferFrom(msg.sender, address(this), _id, _nftAmount, "");
-        IERC20(erc777).safeTransferFrom(msg.sender, address(this), _tokenAmount);
+        IERC1155(erc1155).safeTransferFrom(_msgSender(), address(this), _id, _nftAmount, "");
+        IERC20(erc777).safeTransferFrom(_msgSender(), address(this), _tokenAmount);
         bytes memory data = abi.encode(_id, _nftAmount, _to);
         IERC20(erc777).safeApprove(vault, _tokenAmount);
         IPERC20Vault(vault).pegIn(_tokenAmount, erc777, basicERC1155Host, data);
