@@ -47,8 +47,9 @@ contract BasicERC1155Host is ERC1155Upgradeable, IERC777RecipientUpgradeable, Ow
         bytes calldata /*_operatorData*/
     ) external override {
         if (_from == address(0) && _msgSender() == pToken) {
-            (uint256 _id, uint256 _amount, string memory _to) = abi.decode(_userData, (uint256, uint256, string));
-            _mint(Utils.parseAddr(_to), _id, _amount, ""); // TODO: handle "" data
+            (, bytes memory userData, , ) = abi.decode(_userData, (bytes1, bytes, bytes4, address));
+            (uint256 id, uint256 amount, string memory _to) = abi.decode(userData, (uint256, uint256, string));
+            _mint(Utils.parseAddr(_to), id, amount, ""); // TODO: handle "" data
         }
     }
 

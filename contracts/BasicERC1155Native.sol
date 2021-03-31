@@ -60,7 +60,8 @@ contract BasicERC1155Native is ERC1155HolderUpgradeable, IERC777RecipientUpgrade
         bytes calldata /*_operatorData*/
     ) external override {
         if (_msgSender() == erc777 && _from == vault) {
-            (uint256 id, uint256 amount, string memory to) = abi.decode(_userData, (uint256, uint256, string));
+            (, bytes memory userData, , ) = abi.decode(_userData, (bytes1, bytes, bytes4, address));
+            (uint256 id, uint256 amount, string memory to) = abi.decode(userData, (uint256, uint256, string));
             IERC1155(erc1155).safeTransferFrom(address(this), Utils.parseAddr(to), id, amount, "");
         }
     }

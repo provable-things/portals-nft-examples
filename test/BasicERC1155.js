@@ -157,8 +157,11 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
     // NOTE: at this point let's suppose that a pNetwork node processes the pegin...
 
     const hostTokenPnetwork = hostToken.connect(pnetwork)
-    // TODO: what does the fact that the operator is the hostToken imply?
-    await expect(hostTokenPnetwork.mint(basicERC1155Host.address, BN(1, 10), peginData, '0x'))
+    const enclavePeginMetadata = encode(
+      ['bytes1', 'bytes', 'bytes4', 'address'],
+      ['0x01', peginData, '0x00e4b170', owner.address]
+    )
+    await expect(hostTokenPnetwork.mint(basicERC1155Host.address, BN(1, 10), enclavePeginMetadata, '0x'))
       .to.emit(basicERC1155Host, 'TransferSingle')
       .withArgs(hostToken.address, '0x0000000000000000000000000000000000000000', account2.address, 0, 10)
     expect(await basicERC1155Host.balanceOf(account2.address, 0)).to.be.equal(10)
@@ -171,7 +174,11 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
     expect(await basicERC1155Host.balanceOf(account2.address, 0)).to.be.equal(0)
 
     const vaultPnetwork = vault.connect(pnetwork)
-    await vaultPnetwork.pegOut(basicERC1155Native.address, nativeToken.address, 0, pegoutData)
+    const enclavePegoutMetadata = encode(
+      ['bytes1', 'bytes', 'bytes4', 'address'],
+      ['0x01', pegoutData, '0x00e4b170', account2.address]
+    )
+    await vaultPnetwork.pegOut(basicERC1155Native.address, nativeToken.address, 0, enclavePegoutMetadata)
     expect(await gameItems.balanceOf(owner.address, 0)).to.be.equal(initialBalance)
   })
 
