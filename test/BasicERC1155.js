@@ -6,6 +6,17 @@ use(solidity)
 
 let basicERC1155Native, basicERC1155Host, gameItems, owner, account1, account2, pnetwork, nativeToken, vault, ptoken
 
+const PROVABLE_CHAIN_IDS = {
+  ethereumMainnet: '0x005fe7f9',
+  ethereumRinkeby: '0x0069c322',
+  ethereumRopsten: '0x00f34368',
+  bitcoinMainnet: '0x01ec97de',
+  bitcoinTestnet: '0x018afeb2',
+  telosMainnet: '0x028c7109',
+  eosMainnet: '0x02e7261c',
+  bscMainnet: '0x00e4b170',
+}
+
 describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
   beforeEach(async () => {
     const BasicERC1155Native = await ethers.getContractFactory('BasicERC1155Native')
@@ -159,7 +170,7 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
     const hostTokenPnetwork = hostToken.connect(pnetwork)
     const enclavePeginMetadata = encode(
       ['bytes1', 'bytes', 'bytes4', 'address'],
-      ['0x01', peginData, '0x00e4b170', owner.address]
+      ['0x01', peginData, PROVABLE_CHAIN_IDS.bscMainnet, owner.address]
     )
     await expect(hostTokenPnetwork.mint(basicERC1155Host.address, BN(1, 10), enclavePeginMetadata, '0x'))
       .to.emit(basicERC1155Host, 'TransferSingle')
@@ -176,7 +187,7 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
     const vaultPnetwork = vault.connect(pnetwork)
     const enclavePegoutMetadata = encode(
       ['bytes1', 'bytes', 'bytes4', 'address'],
-      ['0x01', pegoutData, '0x00e4b170', account2.address]
+      ['0x01', pegoutData, PROVABLE_CHAIN_IDS.bscMainnet, account2.address]
     )
     await vaultPnetwork.pegOut(basicERC1155Native.address, nativeToken.address, 0, enclavePegoutMetadata)
     expect(await gameItems.balanceOf(owner.address, 0)).to.be.equal(initialBalance)
