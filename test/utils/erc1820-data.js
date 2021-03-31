@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 const ERC1820_REGISTRY_ABI = [
   {
     constant: false,

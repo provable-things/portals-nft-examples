@@ -2,9 +2,9 @@ const { ethers, upgrades } = require('hardhat')
 
 const main = async () => {
   const TestNftV1Native = await ethers.getContractFactory('TestNftV1Native')
-  console.log('Deploying TestNftV1Native...')
+  console.info('Deploying TestNftV1Native...')
   const { address } = await upgrades.deployProxy(TestNftV1Native, [42], { initializer: 'initialize' })
-  console.log('TestNftV1Native deployed to:', address)
+  console.info('TestNftV1Native deployed to:', address)
 }
 
 main()

@@ -1,10 +1,11 @@
 const { use, expect } = require('chai')
-const { solidity } = require('ethereum-waffle')
 const { BN, encode } = require('./utils')
+const { ethers, upgrades } = require('hardhat')
+const { solidity } = require('ethereum-waffle')
 const singletons = require('./utils/singletons')
 use(solidity)
 
-let basicERC1155Native, basicERC1155Host, gameItems, owner, account1, account2, pnetwork, nativeToken, vault, ptoken
+let basicERC1155Native, basicERC1155Host, gameItems, owner, account1, account2, pnetwork, nativeToken, vault, hostToken
 
 const PROVABLE_CHAIN_IDS = {
   ethereumMainnet: '0x005fe7f9',
@@ -97,8 +98,8 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
   })
 
   it('should be able to set vault', async () => {
-    const vault = '0x0000000000000000000000000000000000004444'
-    await expect(basicERC1155Native.setVault(vault)).to.emit(basicERC1155Native, 'VaultChanged').withArgs(vault)
+    const newVault = '0x0000000000000000000000000000000000004444'
+    await expect(basicERC1155Native.setVault(newVault)).to.emit(basicERC1155Native, 'VaultChanged').withArgs(newVault)
   })
 
   it('should not be able to set erc777', async () => {
@@ -108,9 +109,9 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
   })
 
   it('should not be able to set vault', async () => {
-    const vault = '0x0000000000000000000000000000000000004444'
+    const newVault = '0x0000000000000000000000000000000000004444'
     const basicERC1155NativeAccount1 = basicERC1155Native.connect(account1)
-    await expect(basicERC1155NativeAccount1.setVault(vault)).to.be.revertedWith('Ownable: caller is not the owner')
+    await expect(basicERC1155NativeAccount1.setVault(newVault)).to.be.revertedWith('Ownable: caller is not the owner')
   })
 
   it('should be able to set pToken', async () => {
@@ -144,7 +145,7 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
   it('should not be able to mint tokens on the host chain with a wrong token', async () => {
     const MockPToken = await ethers.getContractFactory('MockPToken')
     const data = encode(['uint256', 'uint256', 'string'], [0, 10, account2.address])
-    wrongPtoken = await MockPToken.deploy('Host Token (pToken)', 'HTKN', [], pnetwork.address)
+    const wrongPtoken = await MockPToken.deploy('Host Token (pToken)', 'HTKN', [], pnetwork.address)
     const wrongPtokenPnetwork = wrongPtoken.connect(pnetwork)
     await expect(wrongPtokenPnetwork.mint(basicERC1155Host.address, BN(1, 10), data, '0x')).to.not.emit(
       basicERC1155Host,
