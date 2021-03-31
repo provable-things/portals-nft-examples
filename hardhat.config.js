@@ -14,7 +14,9 @@ const getEnvironmentVariable = (_envVar) =>
         '✘ MAINNET_PRIVATE_KEY\n',
         '✘ ROPSTEN_PRIVATE_KEY\n',
         '✘ INFURA_KEY\n',
-        '✘ ETHERSCAN_API_KEY\n'
+        '✘ ETHERSCAN_API_KEY\n',
+        '✘ BSCSCAN_API_KEY\n',
+        '✘ BSC_MAINNET_PRIVATE_KEY\n'
       ),
       process.exit(1))
 
@@ -42,15 +44,16 @@ module.exports = {
     mainnet: {
       url: `https://mainnet.infura.io/v3/${getEnvironmentVariable('INFURA_KEY')}`,
       accounts: [getEnvironmentVariable('MAINNET_PRIVATE_KEY')],
-      gas: 3e6,
-      gasPrice: 180e9,
+      gas: 4e6,
+      gasPrice: 280e9,
       websockets: true,
+      timeout: 1000 * 60 * 20
     },
     bsc: {
-      url: `https://mainnet.infura.io/v3/${getEnvironmentVariable('INFURA_KEY')}`,
+      url: `https://bsc.getblock.io/?api_key=${getEnvironmentVariable('BSC_GET_BLOCK_API_KEY')}`,
       accounts: [getEnvironmentVariable('BSC_MAINNET_PRIVATE_KEY')],
       gas: 3e6,
-      gasPrice: 180e9,
+      gasPrice: 10e9,
       websockets: true,
     },
   },
