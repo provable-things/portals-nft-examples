@@ -7,29 +7,34 @@ import "@openzeppelin/contracts-upgradeable/token/ERC777/IERC777RecipientUpgrade
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/introspection/IERC1820Registry.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
-import "./lib/Utils.sol";
-import "./interfaces/IPToken.sol";
+import "../interfaces/IPToken.sol";
+import "../lib/Utils.sol";
 
 
-contract BasicERC1155Host is ERC1155Upgradeable, IERC777RecipientUpgradeable, OwnableUpgradeable {
+contract RarebitBunniesHost is ERC1155Upgradeable, IERC777RecipientUpgradeable, OwnableUpgradeable {
     IERC1820Registry private _erc1820;
     bytes32 private constant TOKENS_RECIPIENT_INTERFACE_HASH = keccak256("ERC777TokensRecipient");
 
     address public pToken;
-    address public basicERC1155Native;
+    address rarebitBunniesNative;
+    mapping(uint256 => string) _uris;
 
     event Burned(uint256 id, uint256 amount, address to);
-    event BasicERC1155NativeChanged(address basicERC1155Native);
+    event RarebitBunniesNativeChanged(address rarebitBunniesNative);
     event PtokenChanged(address pToken);
 
-    function setBasicERC1155Native(address _basicERC1155Native) external onlyOwner {
-        basicERC1155Native = _basicERC1155Native;
-        emit BasicERC1155NativeChanged(basicERC1155Native);
+    function setRarebitBunniesNative(address _rarebitBunniesNative) external onlyOwner {
+        rarebitBunniesNative = _rarebitBunniesNative;
+        emit RarebitBunniesNativeChanged(rarebitBunniesNative);
     }
 
     function setPtoken(address _pToken) external onlyOwner {
         pToken = _pToken;
         emit PtokenChanged(pToken);
+    }
+
+    function uri(uint256 _id) external view override returns (string memory) {
+        return _uris[_id];
     }
 
     /**
@@ -48,9 +53,10 @@ contract BasicERC1155Host is ERC1155Upgradeable, IERC777RecipientUpgradeable, Ow
     ) external override {
         if (_from == address(0) && _msgSender() == pToken) {
             (, bytes memory userData, , address originatingAddress) = abi.decode(_userData, (bytes1, bytes, bytes4, address));
-            require(originatingAddress == basicERC1155Native, "RarebitBunniesNative: Invalid originating address");
-            (uint256 id, uint256 amount, address to) = abi.decode(userData, (uint256, uint256, address));
-            _mint(to, id, amount, ""); // TODO: handle "" data
+            require(originatingAddress == rarebitBunniesNative, "RarebitBunniesNative: Invalid originating address");
+            (uint256 id, uint256 amount, address _to, string memory uri) = abi.decode(userData, (uint256, uint256, address, string));
+            _mint(_to, id, amount, ""); // TODO: handle "" data
+            _uris[id] = uri;
         }
     }
 
@@ -70,7 +76,7 @@ contract BasicERC1155Host is ERC1155Upgradeable, IERC777RecipientUpgradeable, Ow
         // TODO: understand if we should burn a minimum amont of pToken
         _burn(_msgSender(), _id, _amount);
         bytes memory data = abi.encode(_id, _amount, _to);
-        IPToken(pToken).redeem(0, data, Utils.toAsciiString(basicERC1155Native));
+        IPToken(pToken).redeem(0, data, Utils.toAsciiString(rarebitBunniesNative));
         emit Burned(_id, _amount, _to);
         return true;
     }

@@ -46,6 +46,13 @@ module.exports = {
       gasPrice: 180e9,
       websockets: true,
     },
+    bsc: {
+      url: `https://mainnet.infura.io/v3/${getEnvironmentVariable('INFURA_KEY')}`,
+      accounts: [getEnvironmentVariable('BSC_MAINNET_PRIVATE_KEY')],
+      gas: 3e6,
+      gasPrice: 180e9,
+      websockets: true,
+    },
   },
   etherscan: {
     apiKey: getEnvironmentVariable('ETHERSCAN_API_KEY'),

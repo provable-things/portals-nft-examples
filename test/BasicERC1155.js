@@ -154,28 +154,31 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
   })
 
   it('should be able to pegin and pegout', async () => {
-    const peginData = encode(['uint256', 'uint256', 'string'], [0, 10, account2.address])
-    const pegoutData = encode(['uint256', 'uint256', 'string'], [0, 10, owner.address])
+    const peginData = encode(['uint256', 'uint256', 'address'], [0, 10, account2.address])
+    const pegoutData = encode(['uint256', 'uint256', 'address'], [0, 10, owner.address])
     const initialBalance = await gameItems.balanceOf(owner.address, 0)
+
+    await basicERC1155Native.setBasicERC1155Host(basicERC1155Host.address)
+    await basicERC1155Host.setBasicERC1155Native(basicERC1155Native.address)
+
     // P E G   I N
     await nativeToken.approve(basicERC1155Native.address, BN(1, 18))
     await gameItems.setApprovalForAll(basicERC1155Native.address, true)
     await expect(basicERC1155Native.mint(0, 10, BN(1, 18), account2.address))
       .to.emit(basicERC1155Native, 'Minted')
       .withArgs(0, 10, account2.address)
-      .to.emit(vault, 'Minted')
-      .withArgs(nativeToken.address, basicERC1155Native.address, BN(1, 18), basicERC1155Host.address, peginData)
 
     // NOTE: at this point let's suppose that a pNetwork node processes the pegin...
 
     const hostTokenPnetwork = hostToken.connect(pnetwork)
     const enclavePeginMetadata = encode(
       ['bytes1', 'bytes', 'bytes4', 'address'],
-      ['0x01', peginData, PROVABLE_CHAIN_IDS.bscMainnet, owner.address]
+      ['0x01', peginData, PROVABLE_CHAIN_IDS.bscMainnet, basicERC1155Native.address]
     )
     await expect(hostTokenPnetwork.mint(basicERC1155Host.address, BN(1, 10), enclavePeginMetadata, '0x'))
       .to.emit(basicERC1155Host, 'TransferSingle')
       .withArgs(hostToken.address, '0x0000000000000000000000000000000000000000', account2.address, 0, 10)
+
     expect(await basicERC1155Host.balanceOf(account2.address, 0)).to.be.equal(10)
 
     // P E G   O U T
@@ -188,7 +191,7 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
     const vaultPnetwork = vault.connect(pnetwork)
     const enclavePegoutMetadata = encode(
       ['bytes1', 'bytes', 'bytes4', 'address'],
-      ['0x01', pegoutData, PROVABLE_CHAIN_IDS.bscMainnet, account2.address]
+      ['0x01', pegoutData, PROVABLE_CHAIN_IDS.bscMainnet, basicERC1155Host.address]
     )
     await vaultPnetwork.pegOut(basicERC1155Native.address, nativeToken.address, 0, enclavePegoutMetadata)
     expect(await gameItems.balanceOf(owner.address, 0)).to.be.equal(initialBalance)

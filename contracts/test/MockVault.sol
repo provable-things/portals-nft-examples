@@ -16,13 +16,7 @@ contract MockVault is IERC777Recipient {
 
     address public PNETWORK;
 
-    event Minted(
-        address _tokenAddress,
-        address _tokenSender,
-        uint256 _tokenAmount,
-        string _destinationAddress,
-        bytes _userData
-    );
+    event Minted(address _tokenAddress, address _tokenSender, uint256 _tokenAmount, string _destinationAddress, bytes _userData);
 
     constructor(address _pnetwork) {
         PNETWORK = _pnetwork;
