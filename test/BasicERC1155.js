@@ -54,7 +54,7 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
     // This test supposes that both the native and the host are blockchain evm compatible
     basicERC1155Native = await upgrades.deployProxy(
       BasicERC1155Native,
-      [gameItems.address, nativeToken.address, vault.address, basicERC1155Host.address],
+      [gameItems.address, nativeToken.address, vault.address],
       {
         initializer: 'initialize',
       }
@@ -127,6 +127,8 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
 
   it('should be able to retrieve minAmountToPegIn and basicERC1155Host after a contract upgrade', async () => {
     await basicERC1155Native.setMinTokenAmountToPegIn(BN(0.05, 18))
+    await basicERC1155Native.setBasicERC1155Host(basicERC1155Host.address)
+    await basicERC1155Host.setBasicERC1155Native(basicERC1155Native.address)
     const BasicERC1155Native = await ethers.getContractFactory('BasicERC1155Native')
     const testNftV1NativeUpgraded = await upgrades.upgradeProxy(basicERC1155Native.address, BasicERC1155Native)
     const minTokenAmountToPegIn = await testNftV1NativeUpgraded.minTokenAmountToPegIn()

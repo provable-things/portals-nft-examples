@@ -70,13 +70,11 @@ contract BasicERC1155Native is ERC1155HolderUpgradeable, IERC777RecipientUpgrade
     function initialize(
         address _erc1155,
         address _erc777,
-        address _vault,
-        address _basicERC1155Host
+        address _vault
     ) public {
         erc1155 = _erc1155;
         erc777 = _erc777;
         vault = _vault;
-        basicERC1155Host = _basicERC1155Host;
         _erc1820 = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
         _erc1820.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
         __ERC1155Holder_init();

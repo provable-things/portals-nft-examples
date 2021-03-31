@@ -63,7 +63,7 @@ describe('RarebitBunnies (RarebitBunniesNative and RarebitBunniesHost)', () => {
     // This test supposes that both the native and the host are blockchain evm compatible
     rarebitBunniesNative = await upgrades.deployProxy(
       RarebitBunniesNative,
-      [gameItems.address, nativeToken.address, vault.address, rarebitBunniesHost.address],
+      [gameItems.address, nativeToken.address, vault.address],
       {
         initializer: 'initialize',
       }
@@ -138,6 +138,8 @@ describe('RarebitBunnies (RarebitBunniesNative and RarebitBunniesHost)', () => {
 
   it('should be able to retrieve minAmountToPegIn and rarebitBunniesHost after a contract upgrade', async () => {
     await rarebitBunniesNative.setMinTokenAmountToPegIn(BN(0.05, 18))
+    await rarebitBunniesNative.setRarebitBunniesHost(rarebitBunniesHost.address)
+    await rarebitBunniesHost.setRarebitBunniesNative(rarebitBunniesNative.address)
     const RarebitBunniesNative = await ethers.getContractFactory('RarebitBunniesNative')
     const testNftV1NativeUpgraded = await upgrades.upgradeProxy(rarebitBunniesNative.address, RarebitBunniesNative)
     const minTokenAmountToPegIn = await testNftV1NativeUpgraded.minTokenAmountToPegIn()

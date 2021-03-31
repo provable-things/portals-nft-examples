@@ -70,13 +70,11 @@ contract RarebitBunniesNative is ERC1155HolderUpgradeable, IERC777RecipientUpgra
     function initialize(
         address _erc1155,
         address _erc777,
-        address _vault,
-        address _rarebitBunniesHost
+        address _vault
     ) public {
         erc1155 = _erc1155;
         erc777 = _erc777;
         vault = _vault;
-        rarebitBunniesHost = _rarebitBunniesHost;
         _erc1820 = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
         _erc1820.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
         __ERC1155Holder_init();
