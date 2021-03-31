@@ -146,13 +146,6 @@ describe('RarebitBunnies (RarebitBunniesNative and RarebitBunniesHost)', () => {
     expect(uriedNftHostAddress).to.be.equal(rarebitBunniesHost.address)
   })
 
-  it('should not be able to pegin because of minimum nativeToken amount not reached', async () => {
-    await nativeToken.approve(rarebitBunniesNative.address, BN(0.5, 18))
-    await expect(rarebitBunniesNative.mint(0, 10, BN(0.5, 18), account2.address)).to.be.revertedWith(
-      'RarebitBunniesNative: tokenAmount is less than minTokenAmountToPegIn'
-    )
-  })
-
   it('should not be able to mint tokens on the host chain with a wrong token', async () => {
     const MockPToken = await ethers.getContractFactory('MockPToken')
     const data = encode(['uint256', 'uint256', 'string'], [0, 10, account2.address])
@@ -178,7 +171,7 @@ describe('RarebitBunnies (RarebitBunniesNative and RarebitBunniesHost)', () => {
     // P E G   I N
     await nativeToken.approve(rarebitBunniesNative.address, BN(1, 18))
     await gameItems.setApprovalForAll(rarebitBunniesNative.address, true)
-    await expect(rarebitBunniesNative.mint(0, 10, BN(1, 18), account2.address))
+    await expect(rarebitBunniesNative.mint(0, 10, account2.address))
       .to.emit(rarebitBunniesNative, 'Minted')
       .withArgs(0, 10, account2.address)
 
@@ -213,7 +206,7 @@ describe('RarebitBunnies (RarebitBunniesNative and RarebitBunniesHost)', () => {
   it('should be able to pegin more than an user owns', async () => {
     await nativeToken.approve(rarebitBunniesNative.address, BN(1, 18))
     await gameItems.setApprovalForAll(rarebitBunniesNative.address, true)
-    await expect(rarebitBunniesNative.mint(0, BN(11, 18), BN(1, 18), account2.address)).to.be.revertedWith(
+    await expect(rarebitBunniesNative.mint(0, BN(11, 18), account2.address)).to.be.revertedWith(
       'ERC1155: insufficient balance for transfer'
     )
   })

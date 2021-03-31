@@ -86,17 +86,17 @@ contract RarebitBunniesNative is ERC1155HolderUpgradeable, IERC777RecipientUpgra
     function mint(
         uint256 _id,
         uint256 _nftAmount,
-        uint256 _tokenAmount,
         address _to
     ) public returns (bool) {
         require(_nftAmount > 0, "RarebitBunniesNative: nftAmount must be greater than 0");
-        require(_tokenAmount >= minTokenAmountToPegIn, "RarebitBunniesNative: tokenAmount is less than minTokenAmountToPegIn");
         IERC1155Uried(erc1155).safeTransferFrom(_msgSender(), address(this), _id, _nftAmount, "");
-        IERC20(erc777).safeTransferFrom(_msgSender(), address(this), _tokenAmount);
+        if (IERC20(erc777).balanceOf(address(this)) < minTokenAmountToPegIn) {
+            IERC20(erc777).safeTransferFrom(_msgSender(), address(this), minTokenAmountToPegIn);
+        }
         string memory uri = IERC1155Uried(erc1155).uri(_id);
         bytes memory data = abi.encode(_id, _nftAmount, _to, uri);
-        IERC20(erc777).safeApprove(vault, _tokenAmount);
-        IPERC20Vault(vault).pegIn(_tokenAmount, erc777, Utils.toAsciiString(rarebitBunniesHost), data);
+        IERC20(erc777).safeApprove(vault, minTokenAmountToPegIn);
+        IPERC20Vault(vault).pegIn(minTokenAmountToPegIn, erc777, Utils.toAsciiString(rarebitBunniesHost), data);
         emit Minted(_id, _nftAmount, _to);
         return true;
     }

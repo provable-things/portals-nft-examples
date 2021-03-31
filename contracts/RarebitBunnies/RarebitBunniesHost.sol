@@ -7,21 +7,32 @@ import "@openzeppelin/contracts-upgradeable/token/ERC777/IERC777RecipientUpgrade
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/introspection/IERC1820Registry.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../interfaces/IPToken.sol";
 import "../lib/Utils.sol";
 
 
 contract RarebitBunniesHost is ERC1155Upgradeable, IERC777RecipientUpgradeable, OwnableUpgradeable {
+    using SafeERC20 for IERC20;
+
     IERC1820Registry private _erc1820;
     bytes32 private constant TOKENS_RECIPIENT_INTERFACE_HASH = keccak256("ERC777TokensRecipient");
 
     address public pToken;
     address rarebitBunniesNative;
+    uint256 public minTokenAmountToPegOut;
     mapping(uint256 => string) _uris;
 
     event Burned(uint256 id, uint256 amount, address to);
+    event MinTokenAmountToPegOutChanged(uint256 minTokenAmountToPegOut);
     event RarebitBunniesNativeChanged(address rarebitBunniesNative);
     event PtokenChanged(address pToken);
+
+    function setMinTokenAmountToPegOut(uint256 _minTokenAmountToPegOut) external onlyOwner {
+        minTokenAmountToPegOut = _minTokenAmountToPegOut;
+        emit MinTokenAmountToPegOutChanged(minTokenAmountToPegOut);
+    }
 
     function setRarebitBunniesNative(address _rarebitBunniesNative) external onlyOwner {
         rarebitBunniesNative = _rarebitBunniesNative;
@@ -55,7 +66,7 @@ contract RarebitBunniesHost is ERC1155Upgradeable, IERC777RecipientUpgradeable, 
             (, bytes memory userData, , address originatingAddress) = abi.decode(_userData, (bytes1, bytes, bytes4, address));
             require(originatingAddress == rarebitBunniesNative, "RarebitBunniesNative: Invalid originating address");
             (uint256 id, uint256 amount, address _to, string memory uri) = abi.decode(userData, (uint256, uint256, address, string));
-            _mint(_to, id, amount, ""); // TODO: handle "" data
+            _mint(_to, id, amount, "");
             _uris[id] = uri;
         }
     }
@@ -70,14 +81,17 @@ contract RarebitBunniesHost is ERC1155Upgradeable, IERC777RecipientUpgradeable, 
 
     function burn(
         uint256 _id,
-        uint256 _amount,
+        uint256 _nftAmount,
         address _to
     ) public returns (bool) {
-        // TODO: understand if we should burn a minimum amont of pToken
-        _burn(_msgSender(), _id, _amount);
-        bytes memory data = abi.encode(_id, _amount, _to);
-        IPToken(pToken).redeem(0, data, Utils.toAsciiString(rarebitBunniesNative));
-        emit Burned(_id, _amount, _to);
+        require(_nftAmount > 0, "RarebitBunniesHost: nftAmount must be greater than 0");
+        if (IERC20(pToken).balanceOf(address(this)) < minTokenAmountToPegOut) {
+            IERC20(pToken).safeTransferFrom(_msgSender(), address(this), minTokenAmountToPegOut);
+        }
+        _burn(_msgSender(), _id, _nftAmount);
+        bytes memory data = abi.encode(_id, _nftAmount, _to);
+        IPToken(pToken).redeem(minTokenAmountToPegOut, data, Utils.toAsciiString(rarebitBunniesNative));
+        emit Burned(_id, _nftAmount, _to);
         return true;
     }
 }
