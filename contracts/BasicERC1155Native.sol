@@ -29,6 +29,7 @@ contract BasicERC1155Native is ERC1155HolderUpgradeable, IERC777RecipientUpgrade
     event MinTokenAmountToPegInChanged(uint256 minTokenAmountToPegIn);
     event BasicERC1155HostChanged(string basicERC1155Host);
     event ERC777Changed(address erc777);
+    event VaultChanged(address vault);
 
     function setMinTokenAmountToPegIn(uint256 _minTokenAmountToPegIn) external onlyOwner {
         minTokenAmountToPegIn = _minTokenAmountToPegIn;
@@ -43,6 +44,11 @@ contract BasicERC1155Native is ERC1155HolderUpgradeable, IERC777RecipientUpgrade
     function setERC777(address _erc777) external onlyOwner {
         erc777 = _erc777;
         emit ERC777Changed(erc777);
+    }
+
+    function setVault(address _vault) external onlyOwner {
+        vault = _vault;
+        emit VaultChanged(vault);
     }
 
     function tokensReceived(

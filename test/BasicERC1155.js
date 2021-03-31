@@ -85,10 +85,21 @@ describe('BasicERC1155 (BasicERC1155Native and BasicERC1155Host)', () => {
     await expect(basicERC1155Native.setERC777(erc777)).to.emit(basicERC1155Native, 'ERC777Changed').withArgs(erc777)
   })
 
+  it('should be able to set vault', async () => {
+    const vault = '0x0000000000000000000000000000000000004444'
+    await expect(basicERC1155Native.setVault(vault)).to.emit(basicERC1155Native, 'VaultChanged').withArgs(vault)
+  })
+
   it('should not be able to set erc777', async () => {
     const erc777 = '0x0000000000000000000000000000000000004321'
     const basicERC1155NativeAccount1 = basicERC1155Native.connect(account1)
     await expect(basicERC1155NativeAccount1.setERC777(erc777)).to.be.revertedWith('Ownable: caller is not the owner')
+  })
+
+  it('should not be able to set vault', async () => {
+    const vault = '0x0000000000000000000000000000000000004444'
+    const basicERC1155NativeAccount1 = basicERC1155Native.connect(account1)
+    await expect(basicERC1155NativeAccount1.setVault(vault)).to.be.revertedWith('Ownable: caller is not the owner')
   })
 
   it('should be able to set pToken', async () => {
