@@ -1,6 +1,6 @@
-# :cyclone: portals-contracts
+# :cyclone: portals-nft-examples
 
-Repository containing pNetwork Portals smart contracts.
+Repository containing some examples on how to use pNetwork Portals for implement cross-chain NFT bridges.
 
 &nbsp;
 
