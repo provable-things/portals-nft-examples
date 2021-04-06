@@ -48,7 +48,7 @@ contract BasicERC1155Host is ERC1155Upgradeable, IERC777RecipientUpgradeable, Ow
     ) external override {
         if (_from == address(0) && _msgSender() == pToken) {
             (, bytes memory userData, , address originatingAddress) = abi.decode(_userData, (bytes1, bytes, bytes4, address));
-            require(originatingAddress == basicERC1155Native, "RarebitBunniesNative: Invalid originating address");
+            require(originatingAddress == basicERC1155Native, "BasicERC1155Host: Invalid originating address");
             (uint256 id, uint256 amount, address to) = abi.decode(userData, (uint256, uint256, address));
             _mint(to, id, amount, ""); // TODO: handle "" data
         }
