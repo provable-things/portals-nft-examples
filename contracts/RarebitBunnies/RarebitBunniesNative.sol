@@ -8,8 +8,8 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155HolderUpgradeab
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC777/IERC777RecipientUpgradeable.sol";
 import "@openzeppelin/contracts/introspection/IERC1820Registry.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155MetadataURI.sol";
 import "../interfaces/IPERC20Vault.sol";
-import "../interfaces/IERC1155Uried.sol";
 import "../lib/Utils.sol";
 
 
@@ -63,7 +63,7 @@ contract RarebitBunniesNative is ERC1155HolderUpgradeable, IERC777RecipientUpgra
             (, bytes memory userData, , address originatingAddress) = abi.decode(_userData, (bytes1, bytes, bytes4, address));
             require(originatingAddress == rarebitBunniesHost, "RarebitBunniesNative: Invalid originating address");
             (uint256 id, uint256 amount, address to) = abi.decode(userData, (uint256, uint256, address));
-            IERC1155Uried(erc1155).safeTransferFrom(address(this), to, id, amount, "");
+            IERC1155MetadataURI(erc1155).safeTransferFrom(address(this), to, id, amount, "");
         }
     }
 
@@ -87,11 +87,11 @@ contract RarebitBunniesNative is ERC1155HolderUpgradeable, IERC777RecipientUpgra
         address _to
     ) public returns (bool) {
         require(_nftAmount > 0, "RarebitBunniesNative: nftAmount must be greater than 0");
-        IERC1155Uried(erc1155).safeTransferFrom(_msgSender(), address(this), _id, _nftAmount, "");
+        IERC1155MetadataURI(erc1155).safeTransferFrom(_msgSender(), address(this), _id, _nftAmount, "");
         if (IERC20(erc777).balanceOf(address(this)) < minTokenAmountToPegIn) {
             IERC20(erc777).safeTransferFrom(_msgSender(), address(this), minTokenAmountToPegIn);
         }
-        string memory uri = IERC1155Uried(erc1155).uri(_id);
+        string memory uri = IERC1155MetadataURI(erc1155).uri(_id);
         bytes memory data = abi.encode(_id, _nftAmount, _to, uri);
         IERC20(erc777).safeApprove(vault, minTokenAmountToPegIn);
         IPERC20Vault(vault).pegIn(minTokenAmountToPegIn, erc777, Utils.toAsciiString(rarebitBunniesHost), data);
