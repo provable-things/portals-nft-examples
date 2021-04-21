@@ -17,10 +17,6 @@ contract MockPToken is ERC777 {
         pNetwork = _pnetwork;
     }
 
-    function owner() internal view returns (address) {
-        return pNetwork;
-    }
-
     function changePNetwork(address newPNetwork) external {
         require(_msgSender() == pNetwork, "Only the pNetwork can change the `pNetwork` account!");
         require(newPNetwork != address(0), "pNetwork cannot be the zero address!");
@@ -44,15 +40,6 @@ contract MockPToken is ERC777 {
         return true;
     }
 
-    function redeem(
-        uint256 amount,
-        bytes memory data,
-        string memory underlyingAssetRecipient
-    ) public {
-        _burn(_msgSender(), amount, data, "");
-        emit Redeem(msg.sender, amount, underlyingAssetRecipient);
-    }
-
     function operatorRedeem(
         address account,
         uint256 amount,
@@ -63,5 +50,18 @@ contract MockPToken is ERC777 {
         require(isOperatorFor(_msgSender(), account), "ERC777: caller is not an operator for holder");
         _burn(account, amount, data, operatorData);
         emit Redeem(account, amount, underlyingAssetRecipient);
+    }
+
+    function redeem(
+        uint256 amount,
+        bytes memory data,
+        string memory underlyingAssetRecipient
+    ) public {
+        _burn(_msgSender(), amount, data, "");
+        emit Redeem(msg.sender, amount, underlyingAssetRecipient);
+    }
+
+    function owner() internal view returns (address) {
+        return pNetwork;
     }
 }
